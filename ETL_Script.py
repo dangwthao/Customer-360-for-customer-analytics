@@ -110,7 +110,7 @@ class ETL:
         print(f"Data saved to {self.config.output_csv}")
 
     def run(self):
-        daily_dfs = [self.run_etl_for_day(day) for day in range(1, 3)]
+        daily_dfs = [self.run_etl_for_day(day) for day in range(1, 31)]
         combined_df = daily_dfs[0]
         for df in daily_dfs[1:]:
             combined_df = combined_df.unionByName(df)
