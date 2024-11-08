@@ -66,7 +66,15 @@ class ETL:
                         .when(F.col("MostWatch") == F.col("The Thao"), "The Thao")
                         .when(F.col("MostWatch") == F.col("Thieu Nhi"), "Thieu Nhi")
                         .when(F.col("MostWatch") == F.col("Giai Tri"), "Giai Tri"))
-
+            
+    def find_taste(self, df:DataFrame) -> DataFrame:
+        df = df.withColumn('Taste', concat_ws("-",when(F.col('Giai Tri').isNotNull(),lit('Giai Tri'))
+                                                ,when (F.col('Phim Truyen').isNotNull(),lit('Phim Truyen'))
+                                                ,when (F.col('The Thao').isNotNull(),lit('The Thao'))
+                                                ,when (F.col('Thieu Nhi').isNotNull(),lit('Thieu Nhi'))
+                                                ,when (F.col('Truyen Hinh').isNotNull(),lit('Truyen Hinh'))
+                                            ))
+        return df 
     def find_activeness(self, df: DataFrame) -> DataFrame:
         windowspec = Window.partitionBy("Contract").orderBy("date")
         df = df.withColumn("Activeness", F.count("date").over(windowspec)) \
@@ -83,11 +91,13 @@ class ETL:
             F.first("Activeness").alias("Active"))
 
         return df
+    
     def transform_data(self, df: DataFrame) -> DataFrame:
         print("transforming data...")
         df = self.categorize_app_name(df)
         df = df.groupBy("Contract", "date").pivot("Type").sum("TotalDuration").fillna(0)
         df = self.calculate_most_watched(df)
+        df = self.find_taste(df)
         df = self.find_activeness(df)
         return df
 
@@ -110,7 +120,7 @@ class ETL:
         print(f"Data saved to {self.config.output_csv}")
 
     def run(self):
-        daily_dfs = [self.run_etl_for_day(day) for day in range(1, 31)]
+        daily_dfs = [self.run_etl_for_day(day) for day in range(1,31)]
         combined_df = daily_dfs[0]
         for df in daily_dfs[1:]:
             combined_df = combined_df.unionByName(df)
@@ -135,3 +145,7 @@ if __name__ == "__main__":
     config = Config()
     etl_process = ETL(config)
     etl_process.run()
+
+
+     
+        
